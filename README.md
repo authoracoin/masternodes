@@ -1,9 +1,9 @@
 # AuthoraCoin
-Shell script to install a [AuthoraCoin Masternode](http://authoracoin.com/) on a Linux server running Ubuntu 16.04. Use it on your own risk.
+Shell script to install a [AuthoraCoin](http://authoracoin.com/) Masternode on a Linux server running Ubuntu 16.04. Use it on your own risk.
 ***
 
 ## Installation
-```
+```bash
 wget -N https://raw.githubusercontent.com/authoracoin/masternodes/master/authora_install.sh
 bash authora_install.sh
 ```
@@ -40,27 +40,27 @@ mn1 127.0.0.1:23854 2TqeXaU8k3n8mgbAieGUGgUHHtpGFz4nnrwKEz1ss1vHzm1dS3K 2bcd3c84
 11. Click **Update status** to see your node. If it is not shown, close the wallet and start it again. Make sure the wallet is un
 12. Select your MN and click **Start Alias** to start it.
 13. Alternatively, open **Debug Console** and type:
-```
+```bash
 masternode start-alias MN1
 ```
 14. Login to your VPS and check your masternode status by running the following command:
-```
+```bash
 authoracoin-cli masternode status
 ```
 ***
 
 ## Usage:
-```
+```bash
 authoracoin-cli masternode status  
 authoracoin-cli getinfo
 ```
 Also, if you want to check/start/stop **ATH**, run one of the following commands as **root**:
 
-```
-systemctl status authoracoind #To check if AuthoraCoin service is running  
-systemctl start authoracoind #To start AuthoraCoin service  
-systemctl stop authoracoind #To stop AuthoraCoin service  
-systemctl is-enabled authoracoind #To check if AuthoraCoin service is enabled on boot  
+```bash
+systemctl status AuthoraCoin #To check if AuthoraCoin service is running  
+systemctl start AuthoraCoin #To start AuthoraCoin service  
+systemctl stop AuthoraCoin #To stop AuthoraCoin service  
+systemctl is-enabled AuthoraCoin #To check if AuthoraCoin service is enabled on boot  
 ```  
 ***
 
