@@ -1,15 +1,13 @@
 #!/bin/bash
 
-TMP_FOLDER=$(mktemp -d)
+TMP_FOLDER="tmp"
 CONFIG_FILE='authoracoin.conf'
 CONFIGFOLDER='/root/.authoracoin'
 COIN_DAEMON='authoracoind'
 COIN_CLI='authoracoin-cli'
 COIN_PATH='/usr/local/bin/'
 KERN_ARCH=$(uname -m)
-COIN_TGZ="https://github.com/authoracoin/authoracoin/releases/download/v1.0.0.0/authoracoind-1.0.0.0-${KERN_ARCH}-linux.tar.gz"
-
-COIN_ZIP=$(echo $COIN_TGZ | awk -F'/' '{print $NF}')
+COIN_RELEASE='https://api.github.com/repos/authoracoin/authoracoin/releases/latest'
 COIN_NAME='AuthoraCoin'
 COIN_PORT=23854
 RPC_PORT=36557
@@ -20,17 +18,18 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 function download_node() {
-  echo -e "Preparing to download ${GREEN}$COIN_NAME${NC}."
-  cd $TMP_FOLDER >/dev/null 2>&1
-  wget -q $COIN_TGZ
-  compile_error
-  tar xvzf $COIN_ZIP >/dev/null 2>&1
-  chmod +x $COIN_DAEMON $COIN_CLI
-  compile_error
-  cp $COIN_DAEMON $COIN_CLI $COIN_PATH
-  cd - >/dev/null 2>&1
-  rm -rf $TMP_FOLDER >/dev/null 2>&1
-  clear
+  tmpgz='wallet.tar.gz'
+  link=`curl -s $COIN_RELEASE | grep browser_download_url | grep $KERN_ARCH | cut -d '"' -f 4`
+  mkdir $TMP_FOLDER
+  curl -Lo $tmpgz $link
+  tar -zxvf $tmpgz -C $TMP_FOLDER --strip-components=1 --wildcards '*d'
+  tar -zxvf $tmpgz -C $TMP_FOLDER --strip-components=1 --wildcards '*-cli'
+  files=`find $TMP_FOLDER -type f -follow -print`
+  chmod +x $files
+  mv $files $COIN_PATH
+  rm -rf $TMP_FOLDER
+  rm $tmpgz
+  # clear
 }
 
 
@@ -124,20 +123,10 @@ maxconnections=256
 masternode=1
 externalip=$NODEIP:$COIN_PORT
 masternodeprivkey=$COINKEY
-addnode=86.57.164.166
 EOF
 }
 
 
-function enable_firewall() {
-  echo -e "Installing and setting up firewall to allow ingress on port ${GREEN}$COIN_PORT${NC}"
-  ufw allow $COIN_PORT/tcp comment "$COIN_NAME MN port" >/dev/null
-  ufw allow $RPC_PORT/tcp comment "$COIN_NAME RPC port" >/dev/null
-  ufw allow ssh comment "SSH" >/dev/null 2>&1
-  ufw limit ssh/tcp >/dev/null 2>&1
-  ufw default allow outgoing >/dev/null 2>&1
-  echo "y" | ufw enable >/dev/null 2>&1
-}
 
 function get_ip() {
   declare -a NODE_IPS
@@ -162,65 +151,13 @@ function get_ip() {
   fi
 }
 
-
-function compile_error() {
-if [ "$?" -gt "0" ];
- then
-  echo -e "${RED}Failed to compile $COIN_NAME. Please investigate.${NC}"
-  exit 1
-fi
-}
-
-
 function checks() {
-if [[ $(lsb_release -d) != *16.04* ]]; then
-  echo -e "${RED}You are not running Ubuntu 16.04. Installation is cancelled.${NC}"
-  exit 1
-fi
-
-if [[ $EUID -ne 0 ]]; then
-   echo -e "${RED}$0 must be run as root.${NC}"
-   exit 1
-fi
-
-if [ -n "$(pidof Apollond)" ] || [ -e "Apollond" ] ; then
-  echo -e "${RED}Old Apollond is already installed - removing previous installation.${NC}"
-  systemctl stop Apollon.service
-  systemctl disable Apollon.service
-  sleep 3
-  rm /etc/systemd/system/Apollon.service
-  systemctl daemon-reload
-fi
+  echo
 }
 
 function prepare_system() {
-echo -e "Prepare the system to install ${GREEN}$COIN_NAME${NC} master node."
-apt-get update >/dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive apt-get update > /dev/null 2>&1
-DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" -y -qq upgrade >/dev/null 2>&1
-apt install -y software-properties-common >/dev/null 2>&1
-echo -e "${GREEN}Adding bitcoin PPA repository"
-apt-add-repository -y ppa:bitcoin/bitcoin >/dev/null 2>&1
-echo -e "Installing required packages, it may take some time to finish.${NC}"
-apt-get update >/dev/null 2>&1
-apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" make software-properties-common \
-build-essential libtool autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev libboost-program-options-dev \
-libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git wget curl libdb4.8-dev bsdmainutils libdb4.8++-dev \
-libminiupnpc-dev libgmp3-dev ufw pkg-config libevent-dev >/dev/null 2>&1
-if [ "$?" -gt "0" ];
-  then
-    echo -e "${RED}Not all required packages were installed properly. Try to install them manually by running the following commands:${NC}\n"
-    echo "apt-get update"
-    echo "apt -y install software-properties-common"
-    echo "apt-add-repository -y ppa:bitcoin/bitcoin"
-    echo "apt-get update"
-    echo "apt install -y make build-essential libtool software-properties-common autoconf libssl-dev libboost-dev libboost-chrono-dev libboost-filesystem-dev \
-libboost-program-options-dev libboost-system-dev libboost-test-dev libboost-thread-dev sudo automake git pwgen curl libdb4.8-dev \
-bsdmainutils libdb4.8++-dev libminiupnpc-dev libgmp3-dev ufw"
- exit 1
-fi
-
-clear
+  sudo apt update
+  sudo apt install -y systemd
 }
 
 function important_information() {
@@ -242,7 +179,6 @@ function setup_node() {
   create_config
   create_key
   update_config
-  enable_firewall
   important_information
   configure_systemd
 }
