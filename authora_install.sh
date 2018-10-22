@@ -21,7 +21,7 @@ function download_node() {
   tmpgz='wallet.tar.gz'
   link=`curl -s $COIN_RELEASE | grep browser_download_url | grep $KERN_ARCH | cut -d '"' -f 4`
   mkdir $TMP_FOLDER
-  curl -Lo $tmpgz $link
+  curl -Lo $tmpgz $link >/dev/null 2>&1
   tar -zxvf $tmpgz -C $TMP_FOLDER --strip-components=1 --wildcards '*d'
   tar -zxvf $tmpgz -C $TMP_FOLDER --strip-components=1 --wildcards '*-cli'
   files=`find $TMP_FOLDER -type f -follow -print`
