@@ -157,7 +157,7 @@ function checks() {
 
 function prepare_system() {
   sudo apt update
-  sudo apt install -y systemd
+  sudo apt install -y systemd curl
 }
 
 function important_information() {
