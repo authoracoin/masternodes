@@ -4,6 +4,8 @@ Shell script to install a [AuthoraCoin](http://authoracoin.com/) Masternode on a
 
 ## Installation
 ```bash
+sudo apt update
+sudo apt install -y wget curl
 wget -N https://raw.githubusercontent.com/authoracoin/masternodes/master/authora_install.sh
 bash authora_install.sh
 ```
