@@ -20,7 +20,7 @@ NC='\033[0m'
 function download_node() {
   tmpgz='wallet.tar.gz'
   link=`curl -s $COIN_RELEASE | grep browser_download_url | grep $KERN_ARCH | cut -d '"' -f 4`
-  mkdir $TMP_FOLDER
+  mkdir -p $TMP_FOLDER
   curl -Lo $tmpgz $link >/dev/null 2>&1
   tar -zxvf $tmpgz -C $TMP_FOLDER --strip-components=1 --wildcards '*d'
   tar -zxvf $tmpgz -C $TMP_FOLDER --strip-components=1 --wildcards '*-cli'
@@ -93,24 +93,17 @@ EOF
 }
 
 function create_key() {
-  echo -e "Enter your ${RED}$COIN_NAME Masternode Private Key${NC}. Leave it blank to generate a new ${RED}Masternode Private Key${NC} for you:"
-  read -t 100 -e COINKEY
+  echo -e "Enter your ${RED}$COIN_NAME Masternode Private Key${NC}:"
+  read -e COINKEY
   if [[ -z "$COINKEY" ]]; then
-  $COIN_PATH$COIN_DAEMON -daemon
-  sleep 30
-  if [ -z "$(ps axo cmd:100 | grep $COIN_DAEMON)" ]; then
-   echo -e "${RED}$COIN_NAME server couldn not start. Check /var/log/syslog for errors.{$NC}"
-   exit 1
+    $COIN_PATH$COIN_DAEMON -daemon
+    sleep 20
+    if [ -z "$(ps axo cmd:100 | grep $COIN_DAEMON)" ]; then
+     echo -e "${RED}$COIN_NAME server couldn not start. Check /var/log/syslog for errors.{$NC}"
+     exit 1
+    fi
+    $COIN_PATH$COIN_CLI stop
   fi
-  COINKEY=$($COIN_PATH$COIN_CLI masternode genkey)
-  if [ "$?" -gt "0" ];
-    then
-    echo -e "${RED}Wallet not fully loaded. Let us wait and try again to generate the Private Key${NC}"
-    sleep 30
-    COINKEY=$($COIN_PATH$COIN_CLI masternode genkey)
-  fi
-  $COIN_PATH$COIN_CLI stop
-fi
 clear
 }
 
@@ -183,11 +176,24 @@ function setup_node() {
   configure_systemd
 }
 
+function uninstall_node() {
+  systemctl stop $COIN_NAME.service
+  systemctl disable $COIN_NAME.service
+  sleep 15
+  rm /etc/systemd/system/$COIN_NAME.service
+  rm -r $CONFIGFOLDER
+  rm $COIN_PATH$COIN_DAEMON
+  rm $COIN_PATH$COIN_CLI
+}
 
 ##### Main #####
-clear
-
-checks
-prepare_system
-download_node
-setup_node
+if [ "$1" == "uninstall" ]; then
+  uninstall_node
+  exit
+elif [ "$1" == ""  ]; then
+  clear
+  checks
+  prepare_system
+  download_node
+  setup_node
+fi
