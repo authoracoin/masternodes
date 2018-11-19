@@ -66,5 +66,10 @@ systemctl is-enabled AuthoraCoin #To check if AuthoraCoin service is enabled on 
 ```  
 ***
 
+## Uninstall:
+```bash
+bash authora_install.sh uninstall
+``` 
+
 Credits:
 https://github.com/zoldur
